@@ -105,64 +105,54 @@
                 resultDiv.style.display = 'block';
             }
         }
-        function formatAnalysisResult(response) {
-            // Parse the plain text response and convert to styled HTML
-            let html = '';
-            const lines = response.split('\n').filter(line => line.trim());
-
-            for (let line of lines) {
-                line = line.trim();
-
-                // Scam Detection line
-                if (line.includes('Scam Detection:')) {
-                    const isScam = line.includes('Yes');
-                    const scamClass = isScam ? 'scam-yes' : 'scam-no';
-                    const value = isScam ? 'Yes' : 'No';
-                    html += `<div class="result-section"><div class="result-title">Scam Detection: <span class="${scamClass}">${value}</span></div></div>`;
-                }
-
-                // Scam Type line
-                else if (line.includes('Scam Type:')) {
-                    const type = line.replace('Scam Type:', '').replace(/\*\*/g, '').trim();
-                    html += `<div class="result-item"><strong>Scam Type:</strong> ${type}</div>`;
-                }
-
-                // Risk Level line
-                else if (line.includes('Risk Level:')) {
-                    const level = line.replace('Risk Level:', '').replace(/\*\*/g, '').trim();
-                    const riskClass = getRiskClass(level);
-                    html += `<div class="result-item"><strong>Risk Level:</strong> <span class="${riskClass}">${level}</span></div>`;
-                }
-
-                // Explanation line
-                else if (line.includes('Explanation:')) {
-                    const explanation = line.replace('Explanation:', '').replace(/\*\*/g, '').trim();
-                    html += `<div class="explanation-box"><strong>Explanation:</strong><p>${explanation}</p></div>`;
-                }
-
-                // Recommended Action header
-                else if (line.includes('Recommended Action:')) {
-                    html += `<div class="action-box"><strong>Recommended Actions:</strong><ul>`;
-                }
-
-                // Action items (lines starting with **)
-                else if (line.startsWith('-')) {
-                    const actionText = line.replace('-', '').replace(/\*\*/g, '').trim();
-                    html += `<li>${actionText}</li>`;
-                }
-
-                // Closing ul if we hit end or new section
-                else if (line && !line.startsWith('**') && html.includes('<ul>') && !html.includes('</ul>')) {
-                    html += `</ul></div>`;
-                }
+        function getRiskColor(level){
+            if(level=='High'){
+                return 'red';
+            }if(level=='medium'){
+                return 'orange';
+            }else{
+                return 'green';
+            }
+        }
+        function formatAnalysisResult(data) {
+            if(data.error){
+                return `<div class="error">⚠️ ${data.error}</div>`;
             }
 
-            // Close ul if still open
-            if (html.includes('<ul>') && !html.includes('</ul>')) {
-                html += `</ul></div>`;
-            }
+            const scamColor = data.isScam? 'red':'green';
+            const riskColor = getRiskColor(data.riskLevel);
 
-            return html;
+        
+        return  `<div>
+                <h3>🔍 Analysis Result</h3>
+
+                <p><strong>Scam Detection:</strong> 
+                    <span style="color:${scamColor}; font-weight:bold;">
+                        ${data.isScam ? 'Yes 🚨' : 'No ✅'}
+                    </span>
+                </p>
+
+                <p><strong>Scam Type:</strong> ${data.scamType}</p>
+
+                <p><strong>Risk Level:</strong> 
+                    <span style="color:${riskColor}; font-weight:bold;">
+                        ${data.riskLevel}
+                    </span>
+                </p>
+
+                <p><strong>Confidence:</strong> ${data.confidence}%</p>
+
+                <div style="margin-top:10px;">
+                    <strong>Explanation:</strong>
+                    <p>${data.explanation}</p>
+                </div>
+                <div style="margin-top:1px";>
+                    <strong>Recommended Actions:</strong>
+                    <ul>
+                        ${data.actions.map(a=>`<li>${a}</li>`).join('')}    
+                    </ul>
+                </div>
+                `;
         }
 
         function getRiskClass(level) {

@@ -12,10 +12,11 @@ app.post('/analyze', async (req, res)=>{
         const response = await analyze(text);
         res.json({ result: response });
     }catch(err){
+        console.error("FULL ERROR:", err); 
         res.status(500).json({error: 'Something went wrong'});
     }
 });
 
 app.listen(3000, () => {
-    console.log("Server ruunning on http://localhost:3000")
+    console.log("Server running on http://localhost:3000")
 })

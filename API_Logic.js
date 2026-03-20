@@ -1,6 +1,7 @@
 import 'openai'
 import * as dotenv from 'dotenv'
 import OpenAI from 'openai';
+import { raw } from 'express';
 
 dotenv.config();
 
@@ -12,7 +13,7 @@ const client = new OpenAI({
 const brain_of_AI = `
 You are a cybersecurity expert focused on protecting Indian users from online fraud.
 
-Analyze every message step by step and respond in the following structured format:
+Analyze every message step by step:
 
 1. Scam Detection: (Yes/No)
 2. Scam Type: (Phishing / Impersonation / Job Scam / OTP Fraud / Other)
@@ -20,7 +21,18 @@ Analyze every message step by step and respond in the following structured forma
 4. Explanation: Explain clearly why this is a scam in simple language.
 5. Recommended Action: Give clear steps the user should take.
 
-Keep your answers concise, practical, and easy to understand.
+Return only valid JSON in this format:
+
+{
+    "isScam": true,
+    "scamType": "Job Scam/ OTP Scam/ Phishing/ Impersonation/ Other(Specify type)",
+    "riskLevel": "Low/ Medium/ High",
+    "explanation": "Simple explanation",
+    "actions": ["Step1", "Step2", "Step3"],
+    "confidence": 0-100 
+}
+
+Do not return anything except JSON
 `;
 
 
@@ -39,7 +51,18 @@ export const analyze = async (text)=>{
             {role: 'user', content: text}
         ]
     })
-    return response.choices[0].message.content;
+    const rawreply = response.choices[0].message.content;
+    const rawResponse = rawreply
+                    .replace(/```json/g,'')
+                    .replace(/```/g,'')
+                    .trim();
+    try{
+        const parsedReply = JSON.parse(rawResponse);
+        return parsedReply;
+    }catch(err){
+        console.error("JSON pasre error:". rawResponse);
+        return {error: "Invalid JSON from AI", raw: rawResponse};
+    } 
 }
 
 // const response = await client.chat.completions.create({
@@ -52,9 +75,9 @@ export const analyze = async (text)=>{
 //     { role: 'user', content:  'You got selected for a job at Amazon. Pay ₹1500 for document verification.'}],
 // });
 
-//Running Multiple messgaes - one by one
+// // Running Multiple messgaes - one by one
 
-// console.log(process.env.ASI_ONE_API_KEY);\
+// console.log(process.env.ASI_ONE_API_KEY);
 
 // for (const msg of messages){
 //     const response = await client.chat.completions.create({
